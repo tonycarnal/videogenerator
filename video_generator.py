@@ -11,10 +11,8 @@ from google.cloud import storage
 from moviepy.editor import VideoFileClip
 from moviepy.video.fx.all import crop
 
-def poll_operation(operation_name: str, creds, project_id: str, location: str) -> dict:
+def poll_operation(operation_name: str, creds, project_id: str, location: str, model_id: str) -> dict:
     """Polls a long-running operation until it's done."""
-
-    model_id = "veo-3.0-fast-generate-preview"
     polling_url = (
         f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
         f"/locations/{location}/publishers/google/models/{model_id}:fetchPredictOperation"
@@ -50,7 +48,7 @@ def generate_video_from_image(
     location: str,
     input_image_bytes: bytes,
     output_gcs_uri_prefix: str,
-    prompt: str = "A high-quality, cinematic video based on the provided image.",
+    prompt: str = "A high-quality, cinematic rotation around the subject. the video format must be kept the same",
 ) -> str:
     """
     Generates a video from an image using the Veo model via REST API.
@@ -69,7 +67,7 @@ def generate_video_from_image(
     auth_req = google.auth.transport.requests.Request()
     creds.refresh(auth_req)
 
-    model_id = "veo-3.0-fast-generate-preview"
+    model_id = "veo-3.0-fast-generate-001"
     start_job_url = (
         f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
         f"/locations/{location}/publishers/google/models/{model_id}:predictLongRunning"
@@ -97,7 +95,7 @@ def generate_video_from_image(
 
     print(f"Started video generation operation: {operation_name}")
 
-    completed_operation = poll_operation(operation_name, creds, project_id, location)
+    completed_operation = poll_operation(operation_name, creds, project_id, location, model_id)
 
     if "error" in completed_operation:
         error_message = completed_operation["error"].get("message", "Unknown error")
