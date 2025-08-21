@@ -4,10 +4,11 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies required by Pillow for JPEG and PNG support
+# Install system dependencies required by Pillow and moviepy
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     zlib1g-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the dependencies file to the working directory

@@ -89,3 +89,58 @@ def resize_to_16_9_bytes(input_bytes: bytes) -> bytes:
     except Exception as e:
         print(f"An error occurred during image resizing: {e}")
         raise
+
+
+def prepare_image_for_veo(input_bytes: bytes) -> tuple[bytes, float]:
+    """
+    Prepares an image for the Veo API.
+    1. Records original aspect ratio.
+    2. Resizes to 16:9 with black bars.
+    3. Ensures the output resolution is at least 1280x720.
+
+    Returns:
+        A tuple of (prepared_image_bytes, original_aspect_ratio).
+    """
+    img = Image.open(io.BytesIO(input_bytes))
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    # 1. Record original aspect ratio
+    original_width, original_height = img.size
+    original_aspect_ratio = original_width / original_height
+
+    # 2. Resize to 16:9
+    target_ratio = 16.0 / 9.0
+
+    if abs(original_aspect_ratio - target_ratio) < 1e-5:
+        resized_16_9_img = img
+    else:
+        if original_aspect_ratio > target_ratio:
+            new_width = original_width
+            new_height = int(new_width / target_ratio)
+            background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+            background.paste(img, (0, (new_height - original_height) // 2))
+        else: # original_aspect_ratio < target_ratio
+            new_height = original_height
+            new_width = int(new_height * target_ratio)
+            background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+            background.paste(img, ((new_width - original_width) // 2, 0))
+        resized_16_9_img = background
+
+    # 3. Ensure resolution is at least 1280x720
+    min_width = 1280
+    min_height = 720
+
+    current_width, current_height = resized_16_9_img.size
+
+    if current_width < min_width:
+        print(f"Upscaling image from {current_width}x{current_height} to meet 720p requirement.")
+        final_img = resized_16_9_img.resize((min_width, min_height), Image.Resampling.LANCZOS)
+    else:
+        final_img = resized_16_9_img
+
+    # Convert to bytes
+    output_buffer = io.BytesIO()
+    final_img.save(output_buffer, format='PNG')
+
+    return output_buffer.getvalue(), original_aspect_ratio

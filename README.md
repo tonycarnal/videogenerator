@@ -11,7 +11,32 @@ This is a simple web service that resizes images to a 16:9 aspect ratio by addin
 - Includes a Cloud Build pipeline for automated deployment to Google Cloud Run.
 - Unit tests to ensure the image resizing logic is correct.
 
-## API Endpoint
+## API Endpoints
+
+### `POST /generate-video`
+
+Upload an image to this endpoint to generate a video based on the image. The service will resize the image to 16:9, generate a video with Veo, and then crop the video back to the original image's aspect ratio.
+
+**Request:**
+
+- Method: `POST`
+- URL: `/generate-video`
+- Body: `multipart/form-data` with a single file field named `file`.
+
+**Success Response:**
+
+- Code: `200 OK`
+- Content: A JSON object with the public URL of the final cropped video.
+  ```json
+  {
+    "final_video_url": "https://storage.googleapis.com/veo3testcarnal/final_videos/my_image_cropped_...mp4"
+  }
+  ```
+
+**Error Responses:**
+
+- `400 Bad Request`: If no file is provided.
+- `500 Internal Server Error`: If any error occurs during the multi-step generation process. The JSON response will contain an error message.
 
 ### `POST /resize`
 
@@ -124,3 +149,10 @@ To deploy the service, you will need a Google Cloud project with the Cloud Build
    ```
 
 This will build the Docker image, push it to Artifact Registry, and deploy it to Cloud Run.
+
+### IAM Permissions
+
+The service account used by the Cloud Run service requires the following IAM roles in your GCP project (`nth-canyon-366512`):
+
+-   `Vertex AI User`: To allow the service to call the Veo model.
+-   `Storage Object Admin` on the `veo3testcarnal` bucket: To allow the service to write, read, and manage video files.
