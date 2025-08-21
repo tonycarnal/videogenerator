@@ -1,4 +1,4 @@
-# Image Resizing Service
+# Video generator service
 
 This is a simple web service that resizes images to a 16:9 aspect ratio by adding black bars. The service is built with Flask and is designed to be deployed as a containerized application on Google Cloud Run.
 
