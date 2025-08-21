@@ -1,0 +1,48 @@
+steps:
+# Step 1: Build the Docker image
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build Image'
+  args:
+    - 'build'
+    - '-t'
+    - '${_AR_HOSTNAME}/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
+    - '.'
+
+# Step 2: Push the image to Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push Image'
+  args:
+    - 'push'
+    - '${_AR_HOSTNAME}/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
+
+# Step 3: Deploy to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  id: 'Deploy to Cloud Run'
+  entrypoint: 'gcloud'
+  args:
+    - 'run'
+    - 'deploy'
+    - '${_SERVICE_NAME}'
+    - '--image'
+    - '${_AR_HOSTNAME}/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
+    - '--region'
+    - '${_DEPLOY_REGION}'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated'
+    - '--quiet'
+
+# Define the images to be built and pushed
+images:
+  - '${_AR_HOSTNAME}/${_PROJECT_ID}/${_REPO_NAME}/${_SERVICE_NAME}:${COMMIT_SHA}'
+
+# Default substitution variables
+substitutions:
+  _AR_HOSTNAME: 'us-central1-docker.pkg.dev'
+  _REPO_NAME: 'cloud-run-source-deploy' # Default repo name
+  _SERVICE_NAME: 'image-resize-service'
+  _DEPLOY_REGION: 'us-central1'
+
+# Set logging to cloud logging only
+options:
+  logging: CLOUD_LOGGING_ONLY
