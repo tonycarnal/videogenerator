@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+*.egg
+
+# Test artifacts
+test_images/
+.pytest_cache/
+coverage.xml
+htmlcov/
+
+# IDE files
+.idea/
+.vscode/
