@@ -2,16 +2,19 @@ import os
 import io
 import uuid
 from flask import Flask, request, send_file, jsonify
+from dotenv import load_dotenv
 from image_utils import resize_to_16_9_bytes, prepare_image_for_veo
 from video_generator import generate_video_from_image, crop_video_to_aspect_ratio, upload_to_gcs_and_get_url
 from PIL import Image
 
+load_dotenv()
+
 app = Flask(__name__)
 
 # Constants from user request
-GCP_PROJECT_ID = "nth-canyon-366512"
-GCP_REGION = "us-central1"
-GCS_BUCKET = "veo3testcarnal"
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+GCP_REGION = os.environ.get("GCP_REGION")
+GCS_BUCKET = os.environ.get("GCS_BUCKET")
 
 @app.route('/resize', methods=['POST'])
 def resize_image_endpoint():

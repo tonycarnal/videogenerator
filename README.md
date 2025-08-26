@@ -91,7 +91,15 @@ curl -X POST -F "file=@/path/to/your/image.jpg" http://localhost:8080/resize -o 
    pip install -r requirements.txt
    ```
 
-4. **Run the Flask application:**
+4. **Set up environment variables:**
+   Create a file named `.env` in the root of the project and add the following variables:
+   ```
+   GCP_PROJECT_ID="your-gcp-project-id"
+   GCP_REGION="your-gcp-region"
+   GCS_BUCKET="your-gcs-bucket-name"
+   ```
+
+5. **Run the Flask application:**
    ```bash
    python main.py
    ```
@@ -115,7 +123,7 @@ curl -X POST -F "file=@/path/to/your/image.jpg" http://localhost:8080/resize -o 
 To run the unit tests, execute the following command from the root of the project:
 
 ```bash
-python -m unittest discover tests
+python test_image_utils.py
 ```
 
 ## Deployment

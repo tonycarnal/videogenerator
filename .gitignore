@@ -20,3 +20,4 @@ htmlcov/
 # IDE files
 .idea/
 .vscode/
+.env

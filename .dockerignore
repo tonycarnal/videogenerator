@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+
+# Testing
+test_*.py
+images/
+
+# Documentation
+README.md
+
+# CI/CD
+cloudbuild.yaml
+
+# Docker
+Dockerfile
+.dockerignore

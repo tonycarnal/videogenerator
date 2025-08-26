@@ -133,7 +133,7 @@ def prepare_image_for_veo(input_bytes: bytes) -> tuple[bytes, float]:
 
     current_width, current_height = resized_16_9_img.size
 
-    if current_width < min_width:
+    if original_width < min_width or original_height < min_height:
         print(f"Upscaling image from {current_width}x{current_height} to meet 720p requirement.")
         final_img = resized_16_9_img.resize((min_width, min_height), Image.Resampling.LANCZOS)
     else:
