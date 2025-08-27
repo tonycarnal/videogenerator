@@ -1,113 +1,239 @@
+import base64
+import base64
 import os
 import io
 import uuid
-from flask import Flask, request, send_file, jsonify
+import structlog
+import datetime
+import shutil
+from flask import Flask, request, jsonify, render_template, url_for, redirect
 from dotenv import load_dotenv
 from image_utils import resize_to_16_9_bytes, prepare_image_for_veo
-from video_generator import generate_video_from_image, crop_video_to_aspect_ratio, upload_to_gcs_and_get_url
+from video_generator import start_video_generation_job, poll_operation, crop_video_to_aspect_ratio, upload_to_gcs_and_get_url
 from PIL import Image
+import google.auth
+from logging_config import setup_logging
 
+# --- Logging Setup ---
+setup_logging()
+log = structlog.get_logger()
+
+# --- App Initialization ---
 load_dotenv()
-
 app = Flask(__name__)
 
-# Constants from user request
+# In-memory storage for task statuses.
+TASKS = {}
+
+# --- Environment Variables ---
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_REGION = os.environ.get("GCP_REGION")
 GCS_BUCKET = os.environ.get("GCS_BUCKET")
 
 @app.route('/resize', methods=['POST'])
 def resize_image_endpoint():
+    log.info("resize_image_endpoint.start")
     if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
+        log.warn("resize_image_endpoint.no_file")
+        return render_template('index.html', error="No file part in the request"), 400
 
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected for uploading"}), 400
+        log.warn("resize_image_endpoint.empty_filename")
+        return render_template('index.html', error="No file selected for uploading"), 400
 
     if file:
         try:
             input_bytes = file.read()
+            log.info("resize_image_endpoint.file_read", filename=file.filename, size=len(input_bytes))
 
-            # To get original format, we need to open it first
             try:
                 with Image.open(io.BytesIO(input_bytes)) as img:
                     original_format = img.format or 'PNG'
             except Exception:
-                original_format = 'PNG' # Default if format is not detectable
+                original_format = 'PNG'
 
             output_bytes = resize_to_16_9_bytes(input_bytes)
+            log.info("resize_image_endpoint.resize_complete", new_size=len(output_bytes))
 
-            output_buffer = io.BytesIO(output_bytes)
+            # Save locally if not in Cloud Run
+            if not os.environ.get("K_SERVICE"):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                original_filename, original_ext = os.path.splitext(file.filename)
+                local_filename = f"{original_filename}_16x9_{timestamp}{original_ext}"
+                local_filepath = os.path.join("results", local_filename)
+                with open(local_filepath, "wb") as f:
+                    f.write(output_bytes)
+                log.info("resize_image_endpoint.saved_locally", path=local_filepath)
 
-            filename, _ = os.path.splitext(file.filename)
-            output_filename = f"{filename}_16x9.{original_format.lower()}"
+            img_base64 = base64.b64encode(output_bytes).decode('utf-8')
+            original_img_base64 = base64.b64encode(input_bytes).decode('utf-8')
+            
+            with Image.open(io.BytesIO(input_bytes)) as img:
+                original_width, original_height = img.size
 
-            return send_file(
-                output_buffer,
-                mimetype=f'image/{original_format.lower()}',
-                as_attachment=True,
-                download_name=output_filename
-            )
+            return render_template('index.html', 
+                                 resized_image=img_base64, 
+                                 image_format=original_format.lower(),
+                                 original_image=original_img_base64,
+                                 original_width=original_width,
+                                 original_height=original_height)
 
         except Exception as e:
-            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+            log.error("resize_image_endpoint.error", error=str(e), exc_info=True)
+            return render_template('index.html', error=f"An error occurred: {str(e)}"), 500
 
 @app.route('/')
 def index():
-    return "Image resize service is running. POST an image to /resize.", 200
+    log.info("index.accessed")
+    return render_template('index.html')
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video_endpoint():
+    log.info("generate_video.start")
     if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
+        log.warn("generate_video.no_file")
+        return render_template('index.html', error="No file part in the request"), 400
 
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected for uploading"}), 400
+        log.warn("generate_video.empty_filename")
+        return render_template('index.html', error="No file selected for uploading"), 400
 
     if file:
         try:
             input_bytes = file.read()
             original_filename, _ = os.path.splitext(file.filename)
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes))
 
-            # 1. Prepare image for Veo
-            print("Step 1: Preparing image for Veo API...")
+            task_id = str(uuid.uuid4())
+            TASKS[task_id] = {
+                "status": "preparing",
+                "status_message": "Step 1/4: Preparing image for Veo..."
+            }
+            log.info("generate_video.task_created", task_id=task_id)
+
             prepared_image_bytes, original_aspect_ratio = prepare_image_for_veo(input_bytes)
-            print("Image preparation complete.")
+            log.info("generate_video.image_prepared", task_id=task_id)
 
-            # 2. Generate 16:9 video with Veo
-            print("Step 2: Calling Veo API to generate video...")
-            gcs_uri_16x9 = generate_video_from_image(
+            TASKS[task_id].update({
+                "status": "generating",
+                "status_message": "Step 2/4: Calling Veo API to generate video..."
+            })
+            operation_name, model_id = start_video_generation_job(
                 project_id=GCP_PROJECT_ID,
                 location=GCP_REGION,
                 input_image_bytes=prepared_image_bytes,
                 output_gcs_uri_prefix=f"gs://{GCS_BUCKET}"
             )
-            print(f"16:9 video generated at: {gcs_uri_16x9}")
+            log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 
-            # 3. Crop video back to original aspect ratio
-            print("Step 3: Cropping video to original aspect ratio...")
-            cropped_video_path = crop_video_to_aspect_ratio(gcs_uri_16x9, original_aspect_ratio)
-            print(f"Video cropped and saved to temporary file: {cropped_video_path}")
+            TASKS[task_id].update({
+                "operation_name": operation_name,
+                "model_id": model_id,
+                "original_aspect_ratio": original_aspect_ratio,
+                "original_filename": original_filename,
+            })
 
-            # 4. Upload final video to GCS
-            print("Step 4: Uploading final cropped video to GCS...")
-            destination_blob_name = f"final_videos/{original_filename}_cropped_{uuid.uuid4()}.mp4"
-            final_url = upload_to_gcs_and_get_url(
-                local_file_path=cropped_video_path,
-                gcs_bucket_name=GCS_BUCKET,
-                destination_blob_name=destination_blob_name
-            )
-            print(f"Final video uploaded to: {final_url}")
-
-            return jsonify({"final_video_url": final_url})
+            return redirect(url_for('video_result', task_id=task_id))
 
         except Exception as e:
-            print(f"An error occurred during video generation: {e}")
-            # In a real app, you might want more specific error handling and logging
-            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+            log.error("generate_video.start_error", error=str(e), exc_info=True)
+            return render_template('index.html', error=f"An error occurred: {str(e)}"), 500
+
+@app.route('/video-result/<task_id>')
+def video_result(task_id):
+    log.info("video_result.accessed", task_id=task_id)
+    return render_template('result.html', task_id=task_id)
+
+@app.route('/status/<task_id>')
+def status_endpoint(task_id):
+    log.debug("status_endpoint.check", task_id=task_id)
+    task = TASKS.get(task_id)
+    if not task:
+        log.warn("status_endpoint.task_not_found", task_id=task_id)
+        return jsonify({"status": "failed", "error": "Task not found"}), 404
+
+    # If the task is already complete or has moved beyond 'generating', just return its current state.
+    if task["status"] not in ["generating", "cropping", "uploading"]:
+        return jsonify(task)
+
+    try:
+        # --- Poll Veo Operation ---
+        task["status_message"] = "Step 2/4: Polling Veo API for video generation status..."
+        creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        completed_operation = poll_operation(
+            task["operation_name"], creds, GCP_PROJECT_ID, GCP_REGION, task["model_id"]
+        )
+
+        if "error" in completed_operation:
+            raise RuntimeError(completed_operation["error"].get("message", "Unknown error in Veo"))
+        
+        gcs_uri_16x9 = completed_operation["response"]["videos"][0]["gcsUri"]
+        log.info("status_endpoint.veo_complete", task_id=task_id, gcs_uri=gcs_uri_16x9)
+        video_16_9_url = gcs_uri_16x9.replace("gs://", "https://storage.googleapis.com/")
+
+        # Save the 16:9 video locally if not in Cloud Run
+        if not os.environ.get("K_SERVICE"):
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            local_filename_16x9 = f"{task['original_filename']}_16x9_{timestamp}.mp4"
+            local_filepath_16x9 = os.path.join("results", local_filename_16x9)
+            # This requires downloading the file, which crop_video_to_aspect_ratio also does.
+            # To be efficient, we'll handle the download inside the crop function.
+            # For now, let's add a placeholder and modify the video_generator.
+            pass # Will be handled by the next step.
+
+        # --- Crop Video ---
+        task.update({
+            "status": "cropping",
+            "status_message": "Step 3/4: Cropping video to original aspect ratio..."
+        })
+        cropped_video_path = crop_video_to_aspect_ratio(
+            gcs_uri_16x9, 
+            task["original_aspect_ratio"],
+            original_filename=task["original_filename"],
+            timestamp=datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        )
+        log.info("status_endpoint.crop_complete", task_id=task_id, local_path=cropped_video_path)
+
+        # Save locally if not in Cloud Run
+        if not os.environ.get("K_SERVICE"):
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            local_filename = f"{task['original_filename']}_cropped_{timestamp}.mp4"
+            local_filepath = os.path.join("results", local_filename)
+            shutil.copy(cropped_video_path, local_filepath)
+            log.info("status_endpoint.saved_locally", path=local_filepath)
+
+        # --- Upload Final Video ---
+        task.update({
+            "status": "uploading",
+            "status_message": "Step 4/4: Uploading final cropped video to GCS..."
+        })
+        destination_blob_name = f"final_videos/{task['original_filename']}_cropped_{uuid.uuid4()}.mp4"
+        final_url = upload_to_gcs_and_get_url(
+            local_file_path=cropped_video_path,
+            gcs_bucket_name=GCS_BUCKET,
+            destination_blob_name=destination_blob_name
+        )
+        log.info("status_endpoint.upload_complete", task_id=task_id, final_url=final_url)
+
+        # --- Finalize Task ---
+        task.update({
+            "status": "complete",
+            "status_message": "Video generation complete!",
+            "video_16_9_url": video_16_9_url,
+            "final_video_url": final_url
+        })
+        
+        return jsonify(task)
+
+    except Exception as e:
+        log.error("status_endpoint.processing_error", task_id=task_id, error=str(e), exc_info=True)
+        task["status"] = "failed"
+        task["error"] = str(e)
+        return jsonify(task)
 
 
 if __name__ == "__main__":
+    log.info("application.startup", host="0.0.0.0", port=os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

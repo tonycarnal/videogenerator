@@ -32,7 +32,7 @@ def resize_to_16_9(input_path: str, output_path: str):
             x_offset = (new_width - width) // 2
             y_offset = 0
 
-        background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+        background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
         background.paste(img, (x_offset, y_offset))
         background.save(output_path)
 
@@ -78,7 +78,7 @@ def resize_to_16_9_bytes(input_bytes: bytes) -> bytes:
             x_offset = (new_width - width) // 2
             y_offset = 0
 
-        background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+        background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
         background.paste(img, (x_offset, y_offset))
 
         output_buffer = io.BytesIO()
@@ -118,12 +118,12 @@ def prepare_image_for_veo(input_bytes: bytes) -> tuple[bytes, float]:
         if original_aspect_ratio > target_ratio:
             new_width = original_width
             new_height = int(new_width / target_ratio)
-            background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+            background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
             background.paste(img, (0, (new_height - original_height) // 2))
         else: # original_aspect_ratio < target_ratio
             new_height = original_height
             new_width = int(new_height * target_ratio)
-            background = Image.new('RGB', (new_width, new_height), (0, 0, 0))
+            background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
             background.paste(img, ((new_width - original_width) // 2, 0))
         resized_16_9_img = background
 
