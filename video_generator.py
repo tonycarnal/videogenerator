@@ -82,18 +82,22 @@ def start_video_generation_job(
     location: str,
     input_image_bytes: bytes,
     output_gcs_uri_prefix: str,
+    model: str = "veo3",
     resolution: str = "720p",
+    duration: int = 5,
+    aspect_ratio: str = "16:9",
     prompt: str = "A high-quality, cinematic rotation around the subject. the video format must be kept the same",
 ) -> tuple[str, str]:
     """
     Starts the video generation job and returns the operation name.
     """
-    log.info("start_video_generation_job.start", project_id=project_id, location=location)
+    log.info("start_video_generation_job.start", project_id=project_id, location=location, model=model)
     creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     auth_req = google.auth.transport.requests.Request()
     creds.refresh(auth_req)
 
-    model_id = "veo-3.0-fast-generate-001"
+    model_id = "veo-2.0-generate-001" if model == "veo2" else "veo-3.0-fast-generate-001"
+
     start_job_url = (
         f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
         f"/locations/{location}/publishers/google/models/{model_id}:predictLongRunning"
@@ -106,8 +110,17 @@ def start_video_generation_job(
     log.info("start_video_generation_job.details", model_id=model_id, job_id=str(job_id), output_uri=full_output_uri)
 
     instances = [{"prompt": prompt, "image": {"bytesBase64Encoded": encoded_image, "mimeType": "image/png"}}]
-    parameters = {"resolution": resolution, "generateAudio": False, "storageUri": full_output_uri, "sampleCount": 1}
+
+    parameters = {"storageUri": full_output_uri, "sampleCount": 1}
+    if model == "veo2":
+        parameters["duration"] = duration
+        parameters["aspectRatio"] = aspect_ratio
+    else:  # veo3
+        parameters["resolution"] = resolution
+        parameters["generateAudio"] = False
+
     request_body = {"instances": instances, "parameters": parameters}
+    log.info("start_video_generation_job.request_body", body=request_body)
 
     try:
         response = requests.post(start_job_url, headers=headers, json=request_body)
@@ -117,7 +130,7 @@ def start_video_generation_job(
         log.info("start_video_generation_job.success", operation_name=operation_name)
         return operation_name, model_id
     except requests.exceptions.RequestException as e:
-        log.error("start_video_generation_job.request_error", error=str(e), exc_info=True)
+        log.error("start_video_generation_job.request_error", error=str(e), response_text=response.text, exc_info=True)
         raise
 
 def crop_video_to_aspect_ratio(local_video_path: str, original_aspect_ratio: float) -> str:

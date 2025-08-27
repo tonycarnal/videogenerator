@@ -94,7 +94,6 @@ def index():
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video_endpoint():
-    # ... (This function remains the same)
     log.info("generate_video.start")
     if 'file' not in request.files:
         log.warn("generate_video.no_file")
@@ -108,9 +107,13 @@ def generate_video_endpoint():
     if file:
         try:
             input_bytes = file.read()
+            model = request.form.get("model", "veo3")
             resolution = request.form.get("resolution", "720p")
+            duration = int(request.form.get("duration", 5))
             original_filename, _ = os.path.splitext(file.filename)
-            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution)
+
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes),
+                     model=model, resolution=resolution, duration=duration)
 
             task_id = str(uuid.uuid4())
             TASKS[task_id] = {
@@ -119,19 +122,23 @@ def generate_video_endpoint():
             }
             log.info("generate_video.task_created", task_id=task_id)
 
-            prepared_image_bytes, original_aspect_ratio = prepare_image_for_veo(input_bytes)
-            log.info("generate_video.image_prepared", task_id=task_id)
+            prepared_image_bytes, original_aspect_ratio, aspect_ratio_str = prepare_image_for_veo(input_bytes, model=model)
+            log.info("generate_video.image_prepared", task_id=task_id, target_aspect_ratio=aspect_ratio_str)
 
             TASKS[task_id].update({
                 "status": "generating",
                 "status_message": "Step 2/4: Calling Veo API to generate video..."
             })
+
             operation_name, model_id = start_video_generation_job(
                 project_id=GCP_PROJECT_ID,
                 location=GCP_REGION,
                 input_image_bytes=prepared_image_bytes,
                 output_gcs_uri_prefix=f"gs://{GCS_BUCKET}",
-                resolution=resolution
+                model=model,
+                resolution=resolution,
+                duration=duration,
+                aspect_ratio=aspect_ratio_str
             )
             log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 

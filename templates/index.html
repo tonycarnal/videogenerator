@@ -104,13 +104,30 @@
                 <form id="uploadForm" enctype="multipart/form-data">
                     <label for="file">Choose an image:</label>
                     <input type="file" name="file" id="file" accept="image/*" required>
-                    <div class="form-options" style="margin-top: 1rem;">
-                        <label for="resolution">Resolution:</label>
-                        <select name="resolution" id="resolution">
-                            <option value="720p" selected>720p (Fast)</option>
-                            <option value="1080p">1080p (High Quality)</option>
-                        </select>
+
+                    <div class="form-options" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label for="model" style="display: block; margin-bottom: 0.5rem;">Model:</label>
+                            <select name="model" id="model">
+                                <option value="veo3" selected>Veo 3 (Default)</option>
+                                <option value="veo2">Veo 2</option>
+                            </select>
+                        </div>
+
+                        <div id="resolution-container">
+                            <label for="resolution" style="display: block; margin-bottom: 0.5rem;">Resolution:</label>
+                            <select name="resolution" id="resolution">
+                                <option value="720p" selected>720p (Fast)</option>
+                                <option value="1080p">1080p (High Quality)</option>
+                            </select>
+                        </div>
+
+                        <div id="duration-container" style="display: none;">
+                            <label for="duration" style="display: block; margin-bottom: 0.5rem;">Video Length (seconds):</label>
+                            <input type="number" id="duration" name="duration" min="5" max="8" value="8">
+                        </div>
                     </div>
+
                     <div class="button-group" style="margin-top: 1rem;">
                         <button type="submit" class="btn-secondary" formaction="/resize" formmethod="post">Resize to 16:9</button>
                         <button type="submit" class="btn-primary" formaction="/generate-video" formmethod="post">Generate Video</button>
@@ -163,6 +180,20 @@
                 };
 
                 reader.readAsDataURL(file);
+            }
+        });
+
+        const modelSelect = document.getElementById('model');
+        const resolutionContainer = document.getElementById('resolution-container');
+        const durationContainer = document.getElementById('duration-container');
+
+        modelSelect.addEventListener('change', function() {
+            if (this.value === 'veo2') {
+                resolutionContainer.style.display = 'none';
+                durationContainer.style.display = 'block';
+            } else {
+                resolutionContainer.style.display = 'block';
+                durationContainer.style.display = 'none';
             }
         });
     </script>

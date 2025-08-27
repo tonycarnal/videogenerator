@@ -91,15 +91,15 @@ def resize_to_16_9_bytes(input_bytes: bytes) -> bytes:
         raise
 
 
-def prepare_image_for_veo(input_bytes: bytes) -> tuple[bytes, float]:
+def prepare_image_for_veo(input_bytes: bytes, model: str = "veo3") -> tuple[bytes, float, str]:
     """
     Prepares an image for the Veo API.
     1. Records original aspect ratio.
-    2. Resizes to 16:9 with black bars.
-    3. Ensures the output resolution is at least 1280x720.
+    2. Resizes to the best target aspect ratio (16:9 or 9:16 for veo2).
+    3. Ensures the output resolution is at least 720p.
 
     Returns:
-        A tuple of (prepared_image_bytes, original_aspect_ratio).
+        A tuple of (prepared_image_bytes, original_aspect_ratio, target_aspect_ratio_str).
     """
     img = Image.open(io.BytesIO(input_bytes))
     if img.mode != 'RGB':
@@ -109,38 +109,56 @@ def prepare_image_for_veo(input_bytes: bytes) -> tuple[bytes, float]:
     original_width, original_height = img.size
     original_aspect_ratio = original_width / original_height
 
-    # 2. Resize to 16:9
-    target_ratio = 16.0 / 9.0
-
-    if abs(original_aspect_ratio - target_ratio) < 1e-5:
-        resized_16_9_img = img
+    # 2. Determine target aspect ratio based on model
+    if model == "veo2":
+        # For veo2, choose the closest supported aspect ratio
+        if original_aspect_ratio >= 1:  # Image is wide or square
+            target_ratio = 16.0 / 9.0
+            target_ratio_str = "16:9"
+        else:  # Image is tall
+            target_ratio = 9.0 / 16.0
+            target_ratio_str = "9:16"
     else:
-        if original_aspect_ratio > target_ratio:
+        # Default to 16:9 for veo3
+        target_ratio = 16.0 / 9.0
+        target_ratio_str = "16:9"
+
+    # 3. Resize image to target aspect ratio by adding magenta bars
+    img_ratio = original_width / original_height
+    if abs(img_ratio - target_ratio) < 1e-5:
+        resized_img = img
+    else:
+        # If image is wider than the target aspect ratio, add pillarboxing
+        if img_ratio > target_ratio:
             new_width = original_width
             new_height = int(new_width / target_ratio)
             background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
             background.paste(img, (0, (new_height - original_height) // 2))
-        else: # original_aspect_ratio < target_ratio
+        # If image is taller than the target aspect ratio, add letterboxing
+        else:
             new_height = original_height
             new_width = int(new_height * target_ratio)
             background = Image.new('RGB', (new_width, new_height), (255, 0, 255))
             background.paste(img, ((new_width - original_width) // 2, 0))
-        resized_16_9_img = background
+        resized_img = background
 
-    # 3. Ensure resolution is at least 1280x720
-    min_width = 1280
-    min_height = 720
+    # 4. Ensure resolution is at least 720p
+    current_width, current_height = resized_img.size
+    if target_ratio_str == "16:9":
+        min_width, min_height = 1280, 720
+    else:  # 9:16
+        min_width, min_height = 720, 1280
 
-    current_width, current_height = resized_16_9_img.size
-
-    if original_width < min_width or original_height < min_height:
-        print(f"Upscaling image from {current_width}x{current_height} to meet 720p requirement.")
-        final_img = resized_16_9_img.resize((min_width, min_height), Image.Resampling.LANCZOS)
+    # Upscale if the image is smaller than the target minimum resolution
+    if current_width < min_width or current_height < min_height:
+        print(f"Upscaling image from {current_width}x{current_height} to {min_width}x{min_height}.")
+        # Resize to the exact minimum dimensions, maintaining the aspect ratio
+        final_img = resized_img.resize((min_width, min_height), Image.Resampling.LANCZOS)
     else:
-        final_img = resized_16_9_img
+        final_img = resized_img
 
     # Convert to bytes
     output_buffer = io.BytesIO()
     final_img.save(output_buffer, format='PNG')
 
-    return output_buffer.getvalue(), original_aspect_ratio
+    return output_buffer.getvalue(), original_aspect_ratio, target_ratio_str
