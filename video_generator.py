@@ -85,7 +85,8 @@ def start_video_generation_job(
     resolution: str = "720p",
     prompt: str = "A high-quality, cinematic rotation around the subject. the video format must be kept the same",
     model_id: str = "veo-3.0-fast-generate-001",
-    aspect_ratio: str = "16:9"
+    aspect_ratio: str = "16:9",
+    duration: int = 5
 ) -> tuple[str, str]:
     """
     Starts the video generation job and returns the operation name.
@@ -112,7 +113,8 @@ def start_video_generation_job(
         "generateAudio": False,
         "storageUri": full_output_uri,
         "sampleCount": 1,
-        "aspectRatio": aspect_ratio
+        "aspectRatio": aspect_ratio,
+        "duration": duration
     }
     request_body = {"instances": instances, "parameters": parameters}
 
