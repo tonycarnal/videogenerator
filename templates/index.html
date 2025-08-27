@@ -118,6 +118,11 @@
                             <option value="veo-2.0-generate-001">Veo 2</option>
                         </select>
                     </div>
+                    <div class="form-options" id="duration-container" style="margin-top: 1rem; display: none;">
+                        <label for="duration">Duration (seconds):</label>
+                        <input type="range" name="duration" id="duration" min="5" max="8" value="5" oninput="this.nextElementSibling.value = this.value">
+                        <output>5</output>
+                    </div>
                     <div class="button-group" style="margin-top: 1rem;">
                         <button type="submit" class="btn-secondary" formaction="/resize" formmethod="post">Resize to 16:9</button>
                         <button type="submit" class="btn-primary" formaction="/generate-video" formmethod="post">Generate Video</button>
@@ -151,6 +156,20 @@
         const imagePreview = document.getElementById('original-image-preview');
         const imageInfo = document.getElementById('original-image-info');
         const sidebar = document.getElementById('sidebar');
+        const modelSelect = document.getElementById('model');
+        const resolutionSelect = document.getElementById('resolution');
+        const durationContainer = document.getElementById('duration-container');
+
+        modelSelect.addEventListener('change', function(event) {
+            if (this.value === 'veo-2.0-generate-001') {
+                durationContainer.style.display = 'block';
+                resolutionSelect.value = '720p';
+                resolutionSelect.disabled = true;
+            } else {
+                durationContainer.style.display = 'none';
+                resolutionSelect.disabled = false;
+            }
+        });
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];

@@ -110,8 +110,9 @@ def generate_video_endpoint():
             input_bytes = file.read()
             resolution = request.form.get("resolution", "720p")
             model = request.form.get("model", "veo-3.0-fast-generate-001")
+            duration = request.form.get("duration", 5)
             original_filename, _ = os.path.splitext(file.filename)
-            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution, model=model)
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution, model=model, duration=duration)
 
             task_id = str(uuid.uuid4())
             TASKS[task_id] = {
@@ -139,7 +140,8 @@ def generate_video_endpoint():
                 output_gcs_uri_prefix=f"gs://{GCS_BUCKET}",
                 resolution=resolution,
                 model_id=model,
-                aspect_ratio=aspect_ratio
+                aspect_ratio=aspect_ratio,
+                duration=int(duration)
             )
             log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 
