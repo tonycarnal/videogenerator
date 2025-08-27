@@ -14,7 +14,8 @@ from video_generator import (
     poll_operation, 
     crop_video_to_aspect_ratio, 
     upload_to_gcs, 
-    download_from_gcs
+    download_from_gcs,
+    get_video_info
 )
 from PIL import Image
 import google.auth
@@ -107,8 +108,9 @@ def generate_video_endpoint():
     if file:
         try:
             input_bytes = file.read()
+            resolution = request.form.get("resolution", "720p")
             original_filename, _ = os.path.splitext(file.filename)
-            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes))
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution)
 
             task_id = str(uuid.uuid4())
             TASKS[task_id] = {
@@ -128,7 +130,8 @@ def generate_video_endpoint():
                 project_id=GCP_PROJECT_ID,
                 location=GCP_REGION,
                 input_image_bytes=prepared_image_bytes,
-                output_gcs_uri_prefix=f"gs://{GCS_BUCKET}"
+                output_gcs_uri_prefix=f"gs://{GCS_BUCKET}",
+                resolution=resolution
             )
             log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 
@@ -179,20 +182,17 @@ def status_endpoint(task_id):
         gcs_uri_16x9 = completed_operation["response"]["videos"][0]["gcsUri"]
         log.info("status_endpoint.veo_complete", task_id=task_id, gcs_uri=gcs_uri_16x9)
         
-        # --- Download and Save 16:9 Video ---
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         local_filename_16x9 = f"{task['original_filename']}_16x9_{timestamp}.mp4"
         local_filepath_16x9 = os.path.join(RESULTS_DIR, local_filename_16x9)
         download_from_gcs(gcs_uri_16x9, local_filepath_16x9)
-        # Generate a URL to serve the 16:9 video locally
         video_16_9_url = url_for('serve_video', filename=local_filename_16x9)
+        video_16_9_info = get_video_info(local_filepath_16x9)
 
-        # --- Crop Video ---
-        task.update({"status_message": "Step 3/4: Cropping video to original aspect ratio..."})
-        # We use the already downloaded local file for cropping
+        task.update({"status_message": "Step 3/4: Cropping video..."})
         cropped_video_path = crop_video_to_aspect_ratio(local_filepath_16x9, task["original_aspect_ratio"])
+        log.info("status_endpoint.crop_complete", task_id=task_id, local_path=cropped_video_path)
 
-        # --- Save and Upload Final Video ---
         task.update({"status_message": "Step 4/4: Finalizing video..."})
         final_filename = f"{task['original_filename']}_cropped_{timestamp}.mp4"
         final_filepath = os.path.join(RESULTS_DIR, final_filename)
@@ -200,8 +200,8 @@ def status_endpoint(task_id):
         log.info("status_endpoint.saved_locally", path=final_filepath)
         
         final_url = url_for('serve_video', filename=final_filename)
+        final_video_info = get_video_info(final_filepath)
 
-        # If on Cloud Run, still upload to GCS
         if os.environ.get("K_SERVICE"):
             destination_blob_name = f"final_videos/{final_filename}"
             upload_to_gcs(final_filepath, GCS_BUCKET, destination_blob_name)
@@ -211,7 +211,9 @@ def status_endpoint(task_id):
             "status": "complete",
             "status_message": "Video generation complete!",
             "video_16_9_url": video_16_9_url,
-            "final_video_url": final_url
+            "final_video_url": final_url,
+            "video_16_9_info": video_16_9_info,
+            "final_video_info": final_video_info
         })
         
         return jsonify(task)

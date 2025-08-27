@@ -3,61 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Generation in Progress</title>
+    <title>Video Generation</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            background-color: #f8f9fa;
-        }
-        h1, h2 {
-            color: #212529;
-        }
-        .container {
-            background-color: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        video {
-            max-width: 100%;
-            height: auto;
-            margin-top: 1rem;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 1rem 0;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .video-container {
-            display: none;
-            margin-top: 1.5rem;
-        }
-        .status-message {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; background-color: #f8f9fa; }
+        .container { background-color: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #212529; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 1rem 0; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status-message { font-size: 1.1rem; font-weight: 500; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        #video-results { display: none; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+        .video-container { display: flex; flex-direction: column; }
+        video { max-width: 100%; height: auto; border-radius: 5px; border: 1px solid #dee2e6; background-color: #000; }
+        .video-info { background-color: #f8f9fa; padding: 1rem; border-radius: 5px; border: 1px solid #dee2e6; margin-top: 1rem; font-size: 0.9rem; }
+        .video-info p { margin: 0.5rem 0; }
+        .video-info strong { color: #495057; }
     </style>
 </head>
 <body>
@@ -66,15 +27,16 @@
         <p class="status-message" id="status">Your video is being processed. This may take several minutes. Please keep this page open.</p>
         <div class="spinner" id="spinner"></div>
 
-        <div id="video-results" class="video-container">
-            <h2>Results</h2>
-            <div>
+        <div id="video-results">
+            <div class="video-container">
                 <h3>Initial 16:9 Video</h3>
                 <video id="video16x9" controls></video>
+                <div class="video-info" id="info16x9"></div>
             </div>
-            <div>
+            <div class="video-container">
                 <h3>Final Cropped Video</h3>
                 <video id="videoFinal" controls></video>
+                <div class="video-info" id="infoFinal"></div>
             </div>
         </div>
         <a href="/">Go back</a>
@@ -86,7 +48,19 @@
         const resultsElement = document.getElementById('video-results');
         const video16x9 = document.getElementById('video16x9');
         const videoFinal = document.getElementById('videoFinal');
+        const info16x9 = document.getElementById('info16x9');
+        const infoFinal = document.getElementById('infoFinal');
         const taskId = "{{ task_id }}";
+
+        function formatInfo(info) {
+            if (!info || info.error) return '<p>Could not load video details.</p>';
+            return `
+                <p><strong>Dimensions:</strong> ${info.dimensions}</p>
+                <p><strong>Aspect Ratio:</strong> ${info.aspect_ratio}</p>
+                <p><strong>Size:</strong> ${info.size_mb}</p>
+                <p><strong>Codec:</strong> ${info.codec}</p>
+            `;
+        }
 
         function pollStatus() {
             fetch(`/status/${taskId}`)
@@ -100,12 +74,13 @@
                         spinnerElement.style.display = 'none';
                         video16x9.src = data.video_16_9_url;
                         videoFinal.src = data.final_video_url;
-                        resultsElement.style.display = 'block';
+                        info16x9.innerHTML = formatInfo(data.video_16_9_info);
+                        infoFinal.innerHTML = formatInfo(data.final_video_info);
+                        resultsElement.style.display = 'grid';
                     } else if (data.status === 'failed') {
                         statusElement.textContent = `An error occurred: ${data.error}`;
                         spinnerElement.style.display = 'none';
                     } else {
-                        // If still processing, poll again after 10 seconds
                         setTimeout(pollStatus, 10000);
                     }
                 })
@@ -116,7 +91,6 @@
                 });
         }
 
-        // Start polling when the page loads
         window.onload = pollStatus;
     </script>
 </body>

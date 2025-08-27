@@ -5,7 +5,7 @@ import requests
 import tempfile
 import os
 import structlog
-
+import shutil
 import google.auth
 import google.auth.transport.requests
 from google.cloud import storage
@@ -13,6 +13,35 @@ from moviepy.editor import VideoFileClip
 from moviepy.video.fx.all import crop
 
 log = structlog.get_logger()
+
+def get_video_info(file_path: str) -> dict:
+    """
+    Extracts metadata from a video file.
+    """
+    log.info("get_video_info.start", path=file_path)
+    try:
+        with VideoFileClip(file_path) as clip:
+            file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+            width, height = clip.size
+            aspect_ratio = width / height
+            
+            # MoviePy doesn't directly expose the codec, but we can infer it
+            # For this project, we know we are encoding to h264.
+            codec = "H.264 (libx264)"
+
+            info = {
+                "size_mb": f"{file_size_mb:.2f} MB",
+                "width": width,
+                "height": height,
+                "dimensions": f"{width}x{height}",
+                "aspect_ratio": f"{aspect_ratio:.2f}:1",
+                "codec": codec
+            }
+            log.info("get_video_info.success", info=info)
+            return info
+    except Exception as e:
+        log.error("get_video_info.error", error=str(e), exc_info=True)
+        return {"error": "Could not retrieve video information."}
 
 def poll_operation(operation_name: str, creds, project_id: str, location: str, model_id: str) -> dict:
     """Polls a long-running operation until it's done."""
@@ -53,6 +82,7 @@ def start_video_generation_job(
     location: str,
     input_image_bytes: bytes,
     output_gcs_uri_prefix: str,
+    resolution: str = "720p",
     prompt: str = "A high-quality, cinematic rotation around the subject. the video format must be kept the same",
 ) -> tuple[str, str]:
     """
@@ -76,7 +106,7 @@ def start_video_generation_job(
     log.info("start_video_generation_job.details", model_id=model_id, job_id=str(job_id), output_uri=full_output_uri)
 
     instances = [{"prompt": prompt, "image": {"bytesBase64Encoded": encoded_image, "mimeType": "image/png"}}]
-    parameters = {"resolution": "720p", "generateAudio": False, "storageUri": full_output_uri, "sampleCount": 1}
+    parameters = {"resolution": resolution, "generateAudio": False, "storageUri": full_output_uri, "sampleCount": 1}
     request_body = {"instances": instances, "parameters": parameters}
 
     try:
@@ -153,28 +183,6 @@ def download_from_gcs(gcs_uri: str, local_destination_path: str):
     blob.download_to_filename(local_destination_path)
     log.info("download_from_gcs.success", local_path=local_destination_path)
 
-
-import datetime
-
-def generate_signed_url(gcs_bucket_name: str, destination_blob_name: str) -> str:
-    """
-    Generates a signed URL to provide temporary access to a GCS object.
-    """
-    log.info("generate_signed_url.start", bucket=gcs_bucket_name, blob_name=destination_blob_name)
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(gcs_bucket_name)
-    blob = bucket.blob(destination_blob_name)
-
-    # Set the expiration time for the URL
-    expiration_time = datetime.timedelta(minutes=15)
-
-    signed_url = blob.generate_signed_url(
-        version="v4",
-        expiration=expiration_time,
-        method="GET",
-    )
-    log.info("generate_signed_url.success")
-    return signed_url
 
 def upload_to_gcs(local_file_path: str, gcs_bucket_name: str, destination_blob_name: str) -> str:
     """

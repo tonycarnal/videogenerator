@@ -7,7 +7,7 @@ This is a web service that resizes images and generates videos using Google's Ve
 -   **Web Interface**: A user-friendly UI for uploading images, previewing them, and triggering resize or video generation jobs.
 -   **Image Resizing**: Resizes images to a 16:9 aspect ratio by adding magenta bars (letterboxing/pillarboxing) to avoid impacting the core image content.
 -   **Video Generation**:
-    -   Uses Google's Veo model to generate a video from an input image.
+    -   Uses Google's Veo model to generate a video from an input image, with a choice of 720p or 1080p resolution.
     -   Handles the long-running generation task asynchronously, providing real-time status updates on the UI.
     -   Crops the generated video to match the original image's aspect ratio while preserving the maximum resolution.
 -   **Local Development & Video Serving**:

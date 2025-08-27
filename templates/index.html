@@ -104,7 +104,14 @@
                 <form id="uploadForm" enctype="multipart/form-data">
                     <label for="file">Choose an image:</label>
                     <input type="file" name="file" id="file" accept="image/*" required>
-                    <div class="button-group">
+                    <div class="form-options" style="margin-top: 1rem;">
+                        <label for="resolution">Resolution:</label>
+                        <select name="resolution" id="resolution">
+                            <option value="720p" selected>720p (Fast)</option>
+                            <option value="1080p">1080p (High Quality)</option>
+                        </select>
+                    </div>
+                    <div class="button-group" style="margin-top: 1rem;">
                         <button type="submit" class="btn-secondary" formaction="/resize" formmethod="post">Resize to 16:9</button>
                         <button type="submit" class="btn-primary" formaction="/generate-video" formmethod="post">Generate Video</button>
                     </div>
