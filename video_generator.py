@@ -84,16 +84,17 @@ def start_video_generation_job(
     output_gcs_uri_prefix: str,
     resolution: str = "720p",
     prompt: str = "A high-quality, cinematic rotation around the subject. the video format must be kept the same",
+    model_id: str = "veo-3.0-fast-generate-001",
+    aspect_ratio: str = "16:9"
 ) -> tuple[str, str]:
     """
     Starts the video generation job and returns the operation name.
     """
-    log.info("start_video_generation_job.start", project_id=project_id, location=location)
+    log.info("start_video_generation_job.start", project_id=project_id, location=location, model_id=model_id)
     creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     auth_req = google.auth.transport.requests.Request()
     creds.refresh(auth_req)
 
-    model_id = "veo-3.0-fast-generate-001"
     start_job_url = (
         f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
         f"/locations/{location}/publishers/google/models/{model_id}:predictLongRunning"
@@ -106,7 +107,13 @@ def start_video_generation_job(
     log.info("start_video_generation_job.details", model_id=model_id, job_id=str(job_id), output_uri=full_output_uri)
 
     instances = [{"prompt": prompt, "image": {"bytesBase64Encoded": encoded_image, "mimeType": "image/png"}}]
-    parameters = {"resolution": resolution, "generateAudio": False, "storageUri": full_output_uri, "sampleCount": 1}
+    parameters = {
+        "resolution": resolution,
+        "generateAudio": False,
+        "storageUri": full_output_uri,
+        "sampleCount": 1,
+        "aspectRatio": aspect_ratio
+    }
     request_body = {"instances": instances, "parameters": parameters}
 
     try:
