@@ -29,9 +29,9 @@
 
         <div id="video-results">
             <div class="video-container">
-                <h3>Initial 16:9 Video</h3>
-                <video id="video16x9" controls></video>
-                <div class="video-info" id="info16x9"></div>
+                <h3>Original Generated Video</h3>
+                <video id="videoOriginal" controls></video>
+                <div class="video-info" id="infoOriginal"></div>
             </div>
             <div class="video-container">
                 <h3>Final Cropped Video</h3>
@@ -46,9 +46,9 @@
         const statusElement = document.getElementById('status');
         const spinnerElement = document.getElementById('spinner');
         const resultsElement = document.getElementById('video-results');
-        const video16x9 = document.getElementById('video16x9');
+        const videoOriginal = document.getElementById('videoOriginal');
         const videoFinal = document.getElementById('videoFinal');
-        const info16x9 = document.getElementById('info16x9');
+        const infoOriginal = document.getElementById('infoOriginal');
         const infoFinal = document.getElementById('infoFinal');
         const taskId = "{{ task_id }}";
 
@@ -72,9 +72,9 @@
 
                     if (data.status === 'complete') {
                         spinnerElement.style.display = 'none';
-                        video16x9.src = data.video_16_9_url;
+                        videoOriginal.src = data.original_video_url;
                         videoFinal.src = data.final_video_url;
-                        info16x9.innerHTML = formatInfo(data.video_16_9_info);
+                        infoOriginal.innerHTML = formatInfo(data.original_video_info);
                         infoFinal.innerHTML = formatInfo(data.final_video_info);
                         resultsElement.style.display = 'grid';
                     } else if (data.status === 'failed') {

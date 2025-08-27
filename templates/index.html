@@ -3,192 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Generator</title>
+    <title>Video Generation</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            background-color: #f8f9fa;
-        }
-        h1, h2 {
-            color: #212529;
-        }
-        .container {
-            display: flex;
-            gap: 2rem;
-        }
-        .main-content {
-            flex: 2;
-        }
-        .sidebar {
-            flex: 1;
-            display: none; /* Hidden by default */
-            background-color: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-        .upload-form {
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-        }
-        input[type="file"] {
-            display: block;
-            margin-bottom: 1rem;
-        }
-        .button-group {
-            display: flex;
-            gap: 1rem;
-        }
-        button {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #545b62;
-        }
-        .results {
-            margin-top: 2rem;
-        }
-        img, video {
-            max-width: 100%;
-            height: auto;
-            margin-top: 1rem;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 1rem 0;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background-color: #f8f9fa; }
+        .container { background-color: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #212529; text-align: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: .5rem; font-weight: 500; }
+        input[type="file"], select, input[type="number"] { width: 100%; padding: .5rem; border: 1px solid #ced4da; border-radius: .25rem; }
+        button { display: block; width: 100%; padding: .75rem; border: none; border-radius: .25rem; background-color: #007bff; color: #fff; font-size: 1rem; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .image-preview-container { text-align: center; margin-bottom: 1.5rem; }
+        #image-preview { max-width: 100%; max-height: 400px; border-radius: 5px; border: 1px solid #dee2e6; }
+        .hidden { display: none; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .prompt-suggestion { background-color: #e9ecef; border: 1px solid #ced4da; border-radius: .25rem; padding: 1rem; margin-top: 1rem; }
+        .prompt-suggestion p { margin-top: 0; font-style: italic; }
+        .image-info { background-color: #e9ecef; border: 1px solid #ced4da; border-radius: .25rem; padding: 1rem; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="main-content">
-            <h1>Image to Video Service</h1>
-            <p>Upload an image to resize it or generate a video.</p>
-
-            <div class="upload-form">
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <label for="file">Choose an image:</label>
-                    <input type="file" name="file" id="file" accept="image/*" required>
-                    <div class="form-options" style="margin-top: 1rem;">
-                        <label for="resolution">Resolution:</label>
-                        <select name="resolution" id="resolution">
-                            <option value="720p" selected>720p (Fast)</option>
-                            <option value="1080p">1080p (High Quality)</option>
-                        </select>
-                    </div>
-                    <div class="form-options" style="margin-top: 1rem;">
-                        <label for="model">Model:</label>
-                        <select name="model" id="model">
-                            <option value="veo-3.0-fast-generate-001" selected>Veo 3 Fast</option>
-                            <option value="veo-2.0-generate-001">Veo 2</option>
-                        </select>
-                    </div>
-                    <div class="form-options" id="duration-container" style="margin-top: 1rem; display: none;">
-                        <label for="duration">Duration (seconds):</label>
-                        <input type="range" name="duration" id="duration" min="5" max="8" value="5" oninput="this.nextElementSibling.value = this.value">
-                        <output>5</output>
-                    </div>
-                    <div class="button-group" style="margin-top: 1rem;">
-                        <button type="submit" class="btn-secondary" formaction="/resize" formmethod="post">Resize to 16:9</button>
-                        <button type="submit" class="btn-primary" formaction="/generate-video" formmethod="post">Generate Video</button>
-                    </div>
-                </form>
+        <h1>Animate Your Image</h1>
+        
+        <form id="video-form" action="/generate-video" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Choose an image to animate:</label>
+                <input type="file" id="file" name="file" accept="image/*" onchange="previewImage(event)">
             </div>
 
-            <div id="results" class="results">
-                {% if resized_image %}
-                    <h2>Resized Image:</h2>
-                    <img src="data:image/{{ image_format }};base64,{{ resized_image }}" alt="Resized Image">
-                {% endif %}
+            <div id="image-preview-container" class="image-preview-container hidden">
+                <img id="image-preview" src="#" alt="Image preview">
+                <div id="image-info" class="image-info hidden"></div>
             </div>
-        </div>
-        <div class="sidebar" id="sidebar" style="display: {% if original_image %}block{% else %}none{% endif %};">
-            <div id="original-image-container">
-                <h2>Original Image</h2>
-                <img id="original-image-preview" src="{% if original_image %}data:image/{{ image_format }};base64,{{ original_image }}{% else %}#{% endif %}" alt="Original Image">
-                <p id="original-image-info">
-                    {% if original_image %}
-                        Original format: {{ original_width }}x{{ original_height }}
-                    {% endif %}
-                </p>
+
+            <div id="prompt-container" class="form-group hidden">
+                <div id="prompt-suggestion" class="prompt-suggestion">
+                    <p id="suggested-prompt-text">Generating prompt suggestion...</p>
+                    <div class="spinner" id="prompt-spinner"></div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <input type="checkbox" id="use-suggested-prompt" checked>
+                    <label for="use-suggested-prompt">Use suggested prompt</label>
+                </div>
             </div>
-        </div>
+
+            <div class="form-group">
+                <label for="model">Veo Model:</label>
+                <select id="model" name="model">
+                    <option value="veo-3.0-fast-generate-001" selected>Veo 3.0 Fast</option>
+                    <option value="veo-2.0-generate-001">Veo 2.0</option>
+                </select>
+            </div>
+            <div class="form-group" id="resolution-group">
+                <label for="resolution">Resolution:</label>
+                <select id="resolution" name="resolution">
+                    <option value="720p" selected>720p</option>
+                    <option value="1080p">1080p</option>
+                </select>
+            </div>
+            <div class="form-group hidden" id="duration-group">
+                <label for="duration">Duration (seconds):</label>
+                <input type="number" id="duration" name="duration" value="5" min="2" max="10">
+            </div>
+            <input type="hidden" id="prompt-input" name="prompt">
+            <button type="submit" id="generate-btn" disabled>Generate Video</button>
+        </form>
     </div>
 
     <script>
         const fileInput = document.getElementById('file');
-        const imageContainer = document.getElementById('original-image-container');
-        const imagePreview = document.getElementById('original-image-preview');
-        const imageInfo = document.getElementById('original-image-info');
-        const sidebar = document.getElementById('sidebar');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const imageInfo = document.getElementById('image-info');
+        const promptContainer = document.getElementById('prompt-container');
+        const suggestedPromptText = document.getElementById('suggested-prompt-text');
+        const promptSpinner = document.getElementById('prompt-spinner');
+        const useSuggestedPromptCheckbox = document.getElementById('use-suggested-prompt');
+        const promptInput = document.getElementById('prompt-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const videoForm = document.getElementById('video-form');
         const modelSelect = document.getElementById('model');
-        const resolutionSelect = document.getElementById('resolution');
-        const durationContainer = document.getElementById('duration-container');
+        const resolutionGroup = document.getElementById('resolution-group');
+        const durationGroup = document.getElementById('duration-group');
 
-        modelSelect.addEventListener('change', function(event) {
-            if (this.value === 'veo-2.0-generate-001') {
-                durationContainer.style.display = 'block';
-                resolutionSelect.value = '720p';
-                resolutionSelect.disabled = true;
+        function toggleModelOptions() {
+            if (modelSelect.value === 'veo-2.0-generate-001') {
+                durationGroup.classList.remove('hidden');
+                resolutionGroup.classList.add('hidden');
             } else {
-                durationContainer.style.display = 'none';
-                resolutionSelect.disabled = false;
+                durationGroup.classList.add('hidden');
+                resolutionGroup.classList.remove('hidden');
             }
-        });
+        }
 
-        fileInput.addEventListener('change', function(event) {
+        modelSelect.addEventListener('change', toggleModelOptions);
+        
+        document.addEventListener('DOMContentLoaded', toggleModelOptions);
+
+        async function previewImage(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-
                 reader.onload = function(e) {
                     imagePreview.src = e.target.result;
-                    imageContainer.style.display = 'block';
-                    sidebar.style.display = 'block'; // Show sidebar
-
+                    imagePreviewContainer.classList.remove('hidden');
+                    
                     const img = new Image();
                     img.onload = function() {
-                        imageInfo.textContent = `Original format: ${this.width}x${this.height}`;
+                        imageInfo.innerHTML = `<strong>Dimensions:</strong> ${this.width} x ${this.height} pixels`;
+                        imageInfo.classList.remove('hidden');
                     };
                     img.src = e.target.result;
                 };
-
                 reader.readAsDataURL(file);
+
+                generateBtn.disabled = true;
+                
+                promptContainer.classList.remove('hidden');
+                promptSpinner.style.display = 'inline-block';
+                suggestedPromptText.textContent = 'Generating prompt suggestion...';
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/generate-prompt', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.prompt) {
+                        suggestedPromptText.textContent = data.prompt;
+                    } else {
+                        suggestedPromptText.textContent = 'Could not generate a prompt. Using default.';
+                    }
+                } catch (error) {
+                    console.error('Error fetching prompt:', error);
+                    suggestedPromptText.textContent = 'Error generating prompt. Using default.';
+                } finally {
+                    promptSpinner.style.display = 'none';
+                    generateBtn.disabled = false;
+                }
+            }
+        }
+
+        videoForm.addEventListener('submit', (e) => {
+            if (useSuggestedPromptCheckbox.checked) {
+                promptInput.value = suggestedPromptText.textContent;
+            } else {
+                promptInput.value = "A high-quality, cinematic rotation around the subject. the video format must be kept the same";
             }
         });
     </script>

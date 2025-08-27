@@ -17,6 +17,7 @@ from video_generator import (
     download_from_gcs,
     get_video_info
 )
+from prompt_generator import generate_prompt_for_image
 from PIL import Image
 import google.auth
 from logging_config import setup_logging
@@ -92,6 +93,26 @@ def index():
     log.info("index.accessed")
     return render_template('index.html')
 
+@app.route('/generate-prompt', methods=['POST'])
+def generate_prompt_endpoint():
+    log.info("generate_prompt_endpoint.start")
+    if 'file' not in request.files:
+        log.warn("generate_prompt_endpoint.no_file")
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        log.warn("generate_prompt_endpoint.empty_filename")
+        return jsonify({"error": "No file selected for uploading"}), 400
+
+    try:
+        input_bytes = file.read()
+        prompt = generate_prompt_for_image(GCP_PROJECT_ID, GCP_REGION, input_bytes)
+        return jsonify({"prompt": prompt})
+    except Exception as e:
+        log.error("generate_prompt_endpoint.error", error=str(e), exc_info=True)
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 @app.route('/generate-video', methods=['POST'])
 def generate_video_endpoint():
     # ... (This function remains the same)
@@ -111,8 +132,9 @@ def generate_video_endpoint():
             resolution = request.form.get("resolution", "720p")
             model = request.form.get("model", "veo-3.0-fast-generate-001")
             duration = request.form.get("duration", 5)
+            prompt = request.form.get("prompt", "A high-quality, cinematic rotation around the subject. the video format must be kept the same")
             original_filename, _ = os.path.splitext(file.filename)
-            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution, model=model, duration=duration)
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution, model=model, duration=duration, prompt=prompt)
 
             task_id = str(uuid.uuid4())
             TASKS[task_id] = {
@@ -141,7 +163,8 @@ def generate_video_endpoint():
                 resolution=resolution,
                 model_id=model,
                 aspect_ratio=aspect_ratio,
-                duration=int(duration)
+                duration=int(duration),
+                prompt=prompt
             )
             log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 
@@ -189,19 +212,19 @@ def status_endpoint(task_id):
         if "error" in completed_operation:
             raise RuntimeError(completed_operation["error"].get("message", "Unknown error in Veo"))
         
-        gcs_uri_16x9 = completed_operation["response"]["videos"][0]["gcsUri"]
-        log.info("status_endpoint.veo_complete", task_id=task_id, gcs_uri=gcs_uri_16x9)
+        gcs_uri_original = completed_operation["response"]["videos"][0]["gcsUri"]
+        log.info("status_endpoint.veo_complete", task_id=task_id, gcs_uri=gcs_uri_original)
         
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        local_filename_16x9 = f"{task['original_filename']}_16x9_{timestamp}.mp4"
-        local_filepath_16x9 = os.path.join(RESULTS_DIR, local_filename_16x9)
-        download_from_gcs(gcs_uri_16x9, local_filepath_16x9)
-        video_16_9_url = url_for('serve_video', filename=local_filename_16x9)
-        video_16_9_info = get_video_info(local_filepath_16x9)
+        local_filename_original = f"{task['original_filename']}_original_{timestamp}.mp4"
+        local_filepath_original = os.path.join(RESULTS_DIR, local_filename_original)
+        download_from_gcs(gcs_uri_original, local_filepath_original)
+        original_video_url = url_for('serve_video', filename=local_filename_original)
+        original_video_info = get_video_info(local_filepath_original)
 
         task.update({"status_message": "Step 3/4: Cropping video..."})
-        cropped_video_path = crop_video_to_aspect_ratio(local_filepath_16x9, task["original_aspect_ratio"])
-        log.info("status_endpoint.crop_complete", task_id=task_id, local_path=cropped_video_path)
+        cropped_video_path = crop_video_to_aspect_ratio(local_filepath_original, task["original_aspect_ratio"])
+        log.info("status_endpoint.crop__complete", task_id=task_id, local_path=cropped_video_path)
 
         task.update({"status_message": "Step 4/4: Finalizing video..."})
         final_filename = f"{task['original_filename']}_cropped_{timestamp}.mp4"
@@ -220,9 +243,9 @@ def status_endpoint(task_id):
         task.update({
             "status": "complete",
             "status_message": "Video generation complete!",
-            "video_16_9_url": video_16_9_url,
+            "original_video_url": original_video_url,
             "final_video_url": final_url,
-            "video_16_9_info": video_16_9_info,
+            "original_video_info": original_video_info,
             "final_video_info": final_video_info
         })
         
