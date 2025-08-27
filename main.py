@@ -8,7 +8,7 @@ import shutil
 from flask import Flask, request, jsonify, render_template, url_for, redirect, send_from_directory
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from image_utils import resize_to_16_9_bytes, prepare_image_for_veo
+from image_utils import resize_to_16_9_bytes, prepare_image_for_veo, prepare_image_for_veo2
 from video_generator import (
     start_video_generation_job, 
     poll_operation, 
@@ -109,8 +109,9 @@ def generate_video_endpoint():
         try:
             input_bytes = file.read()
             resolution = request.form.get("resolution", "720p")
+            model = request.form.get("model", "veo-3.0-fast-generate-001")
             original_filename, _ = os.path.splitext(file.filename)
-            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution)
+            log.info("generate_video.file_read", filename=original_filename, size=len(input_bytes), resolution=resolution, model=model)
 
             task_id = str(uuid.uuid4())
             TASKS[task_id] = {
@@ -119,8 +120,13 @@ def generate_video_endpoint():
             }
             log.info("generate_video.task_created", task_id=task_id)
 
-            prepared_image_bytes, original_aspect_ratio = prepare_image_for_veo(input_bytes)
-            log.info("generate_video.image_prepared", task_id=task_id)
+            aspect_ratio = "16:9" # Default for Veo 3
+            if model == "veo2":
+                prepared_image_bytes, original_aspect_ratio, aspect_ratio = prepare_image_for_veo2(input_bytes)
+            else:
+                prepared_image_bytes, original_aspect_ratio = prepare_image_for_veo(input_bytes)
+            log.info("generate_video.image_prepared", task_id=task_id, aspect_ratio=aspect_ratio)
+
 
             TASKS[task_id].update({
                 "status": "generating",
@@ -131,7 +137,9 @@ def generate_video_endpoint():
                 location=GCP_REGION,
                 input_image_bytes=prepared_image_bytes,
                 output_gcs_uri_prefix=f"gs://{GCS_BUCKET}",
-                resolution=resolution
+                resolution=resolution,
+                model_id=model,
+                aspect_ratio=aspect_ratio
             )
             log.info("generate_video.job_started", task_id=task_id, operation_name=operation_name)
 
