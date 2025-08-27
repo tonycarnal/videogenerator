@@ -122,7 +122,7 @@ def generate_video_endpoint():
             log.info("generate_video.task_created", task_id=task_id)
 
             aspect_ratio = "16:9" # Default for Veo 3
-            if model == "veo2":
+            if model == "veo-2.0-generate-001":
                 prepared_image_bytes, original_aspect_ratio, aspect_ratio = prepare_image_for_veo2(input_bytes)
             else:
                 prepared_image_bytes, original_aspect_ratio = prepare_image_for_veo(input_bytes)
