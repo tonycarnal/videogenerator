@@ -54,9 +54,11 @@ class TestPrepareImageForVeo(unittest.TestCase):
 
     def test_prepare_image_needs_upscaling(self):
         input_bytes = self.create_test_image_bytes((640, 360), 'yellow')
-        prepared_bytes, _ = prepare_image_for_veo(input_bytes)
+        # We expect a 16:9 output by default
+        prepared_bytes, _, aspect_ratio_str = prepare_image_for_veo(input_bytes)
         with Image.open(io.BytesIO(prepared_bytes)) as img:
             self.assertEqual(img.size, (1280, 720))
+            self.assertEqual(aspect_ratio_str, "16:9")
 
 # --- Integration Test for Video Generation ---
 
@@ -84,7 +86,9 @@ class TestVideoGenerationIntegration(unittest.TestCase):
         # 1. Prepare the image
         with open(self.test_image_path, "rb") as f:
             input_bytes = f.read()
-        prepared_image_bytes, _ = prepare_image_for_veo(input_bytes)
+        # Integration test uses default model (veo3), which should be 16:9
+        prepared_image_bytes, _, aspect_ratio_str = prepare_image_for_veo(input_bytes)
+        self.assertEqual(aspect_ratio_str, "16:9")
 
         # 2. Start the video generation job
         operation_name, model_id = video_generator.start_video_generation_job(
