@@ -9,14 +9,15 @@ This is a web service that resizes images and generates videos using Google's Ve
 -   **Video Generation**:
     -   Uses Google's Veo model to generate a video from an input image.
     -   Handles the long-running generation task asynchronously, providing real-time status updates on the UI.
-    -   Generates a 16:9 video and a version cropped back to the original image's aspect ratio.
--   **Local Development**:
-    -   Saves all generated images and videos to a local `results/` directory when not running on Cloud Run.
-    -   Features a structured logging system (`structlog`) with configurable log levels and file output via a `.env` file.
+    -   Crops the generated video to match the original image's aspect ratio while preserving the maximum resolution.
+-   **Local Development & Video Serving**:
+    -   When running locally, all generated images and videos are saved to a `results/` directory.
+    -   The Flask server acts as a proxy to securely serve these local video files to the browser, avoiding the need for public buckets.
+-   **Structured Logging**: Features a structured logging system (`structlog`) with configurable log levels and file output via a `.env` file.
 -   **Deployment**:
     -   Containerized with Docker for easy deployment.
     -   Includes a Cloud Build pipeline for automated deployment to Google Cloud Run.
--   **Testing**: Includes unit tests and a debug script (`debug_video_generator.py`) for direct testing of the Veo API integration.
+-   **Testing**: Includes unit tests and a conditional integration test for the full Veo API pipeline.
 
 ## Getting Started
 
@@ -56,6 +57,9 @@ This is a web service that resizes images and generates videos using Google's Ve
     # Logging Configuration
     LOG_LEVEL="INFO"      # (e.g., DEBUG, INFO, WARNING, ERROR)
     LOG_TO_FILE="True"    # (True or False)
+
+    # Set to True to run slow integration tests that call external APIs
+    RUN_INTEGRATION_TESTS="False"
     ```
 
 5.  **Authenticate with Google Cloud:**
@@ -70,22 +74,11 @@ This is a web service that resizes images and generates videos using Google's Ve
     ```
     The application will be available at `http://localhost:8080`.
 
-## Local Output
-
-When running locally, all generated images and videos will be saved in the `results/` directory. The filenames will include the original name, the aspect ratio, and a timestamp.
-
 ## Running Tests
 
-To run the unit tests for the image utilities, execute the following command:
+To run the fast unit tests:
 ```bash
 python test_image_utils.py
 ```
 
-To run the debug script for the Veo API integration:
-```bash
-python debug_video_generator.py
-```
-
-## Deployment
-
-This project includes a `cloudbuild.yaml` file for automated deployment to Google Cloud Run. See the "Deployment" section in the original `README.md` for detailed instructions.
+To run the slow integration test that calls the Veo API, first set `RUN_INTEGRATION_TESTS=True` in your `.env` file, and then run the same command.

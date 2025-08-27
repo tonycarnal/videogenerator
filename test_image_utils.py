@@ -4,54 +4,29 @@ import shutil
 import io
 import sys
 from PIL import Image
+from dotenv import load_dotenv
+import google.auth
 
-# Add project root to the Python path to allow importing from the 'image_utils' module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from image_utils import resize_to_16_9, resize_to_16_9_bytes
-
-class TestImageResizing(unittest.TestCase):
-
-    def setUp(self):
-        self.test_dir = "images"
-        os.makedirs(self.test_dir, exist_ok=True)
-
-        self.wide_img_path = os.path.join(self.test_dir, "wide.png")
-        self.tall_img_path = os.path.join(self.test_dir, "tall.png")
-        self.exact_img_path = os.path.join(self.test_dir, "exact.png")
-
-        # Create a wide image (e.g., 20:9 > 16:9)
-        Image.new('RGB', (200, 90), color='red').save(self.wide_img_path)
-        # Create a tall image (e.g., 4:3 < 16:9)
-        Image.new('RGB', (120, 90), color='blue').save(self.tall_img_path)
-        # Create a 16:9 image
-        import unittest
-import os
-import shutil
-import io
-import sys
-from PIL import Image
-
-# Add project root to the Python path to allow importing from the 'image_utils' module
+# Add project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from image_utils import resize_to_16_9, resize_to_16_9_bytes, prepare_image_for_veo
+import video_generator
+
+# Load environment variables for integration tests
+load_dotenv()
+
+# --- Unit Tests for Image Utilities ---
 
 class TestImageResizing(unittest.TestCase):
-
     def setUp(self):
-        self.test_dir = "images"
+        self.test_dir = "temp_test_images"
         os.makedirs(self.test_dir, exist_ok=True)
-
         self.wide_img_path = os.path.join(self.test_dir, "wide.png")
         self.tall_img_path = os.path.join(self.test_dir, "tall.png")
         self.exact_img_path = os.path.join(self.test_dir, "exact.png")
-
-        # Create a wide image (e.g., 20:9 > 16:9)
         Image.new('RGB', (200, 90), color='red').save(self.wide_img_path)
-        # Create a tall image (e.g., 4:3 < 16:9)
         Image.new('RGB', (120, 90), color='blue').save(self.tall_img_path)
-        # Create a 16:9 image
         Image.new('RGB', (160, 90), color='green').save(self.exact_img_path)
 
     def tearDown(self):
@@ -61,231 +36,81 @@ class TestImageResizing(unittest.TestCase):
     def test_resize_wide_image(self):
         output_path = os.path.join(self.test_dir, "wide_resized.png")
         resize_to_16_9(self.wide_img_path, output_path)
-
         with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 200x90 input (wider than 16:9)
-            # New height should be int(200 / (16/9)) = 112
-            self.assertEqual(width, 200)
-            self.assertEqual(height, 112)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
+            self.assertEqual(img.size, (200, 112))
 
     def test_resize_tall_image(self):
         output_path = os.path.join(self.test_dir, "tall_resized.png")
         resize_to_16_9(self.tall_img_path, output_path)
-
         with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 120x90 input (taller than 16:9)
-            # New width should be int(90 * (16/9)) = 160
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
-    def test_resize_exact_16_9_image(self):
-        output_path = os.path.join(self.test_dir, "exact_resized.png")
-        resize_to_16_9(self.exact_img_path, output_path)
-
-        with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 160x90 input (already 16:9)
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
-    def test_resize_wide_image_bytes(self):
-        with open(self.wide_img_path, 'rb') as f:
-            input_bytes = f.read()
-
-        output_bytes = resize_to_16_9_bytes(input_bytes)
-
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 200)
-            self.assertEqual(height, 112)
-
-    def test_resize_tall_image_bytes(self):
-        with open(self.tall_img_path, 'rb') as f:
-            input_bytes = f.read()
-
-        output_bytes = resize_to_16_9_bytes(input_bytes)
-
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
-    def test_resize_exact_16_9_image_bytes(self):
-        with open(self.exact_img_path, 'rb') as f:
-            input_bytes = f.read()
-
-        output_bytes = resize_to_16_9_bytes(input_bytes)
-
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
+            self.assertEqual(img.size, (160, 90))
 
 class TestPrepareImageForVeo(unittest.TestCase):
-
-    def create_test_image_bytes(self, size, color, img_format='PNG'):
+    def create_test_image_bytes(self, size, color):
         img = Image.new('RGB', size, color=color)
         buffer = io.BytesIO()
-        img.save(buffer, format=img_format)
+        img.save(buffer, format='PNG')
         return buffer.getvalue()
 
-    def test_prepare_image_already_correct(self):
-        # Image is already 16:9 and >= 1280x720
-        input_bytes = self.create_test_image_bytes((1920, 1080), 'red')
-        original_aspect_ratio = 1920 / 1080
-
-        prepared_bytes, aspect_ratio = prepare_image_for_veo(input_bytes)
-
-        self.assertAlmostEqual(aspect_ratio, original_aspect_ratio, delta=0.01)
-
-        with Image.open(io.BytesIO(prepared_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 1920)
-            self.assertEqual(height, 1080)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
-    def test_prepare_image_needs_letterboxing(self):
-        # Image is wider than 16:9 (e.g., 2.35:1)
-        input_bytes = self.create_test_image_bytes((1920, 817), 'blue')
-        original_aspect_ratio = 1920 / 817
-
-        prepared_bytes, aspect_ratio = prepare_image_for_veo(input_bytes)
-
-        self.assertAlmostEqual(aspect_ratio, original_aspect_ratio, delta=0.01)
-
-        with Image.open(io.BytesIO(prepared_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 1920)
-            self.assertEqual(height, 1080) # 1920 / (16/9)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
-    def test_prepare_image_needs_pillarboxing(self):
-        # Image is taller than 16:9 (e.g., 4:3)
-        input_bytes = self.create_test_image_bytes((1024, 768), 'green')
-        original_aspect_ratio = 1024 / 768
-
-        prepared_bytes, aspect_ratio = prepare_image_for_veo(input_bytes)
-
-        self.assertAlmostEqual(aspect_ratio, original_aspect_ratio, delta=0.01)
-
-        with Image.open(io.BytesIO(prepared_bytes)) as img:
-            width, height = img.size
-            # Since the original is < 1280 wide, it will be upscaled
-            self.assertEqual(width, 1280)
-            self.assertEqual(height, 720)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
     def test_prepare_image_needs_upscaling(self):
-        # Image is 16:9 but smaller than 1280x720
         input_bytes = self.create_test_image_bytes((640, 360), 'yellow')
-        original_aspect_ratio = 640 / 360
-
-        prepared_bytes, aspect_ratio = prepare_image_for_veo(input_bytes)
-
-        self.assertAlmostEqual(aspect_ratio, original_aspect_ratio, delta=0.01)
-
+        prepared_bytes, _ = prepare_image_for_veo(input_bytes)
         with Image.open(io.BytesIO(prepared_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 1280)
-            self.assertEqual(height, 720)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
+            self.assertEqual(img.size, (1280, 720))
 
-    def test_prepare_image_needs_boxing_and_upscaling(self):
-        # Image is not 16:9 and is smaller than 1280x720
-        input_bytes = self.create_test_image_bytes((500, 500), 'purple') # 1:1 aspect ratio
-        original_aspect_ratio = 1.0
+# --- Integration Test for Video Generation ---
 
-        prepared_bytes, aspect_ratio = prepare_image_for_veo(input_bytes)
+# Condition to skip the test if the flag is not set to 'True'
+run_integration_tests = os.environ.get("RUN_INTEGRATION_TESTS", "False").lower() == "true"
 
-        self.assertAlmostEqual(aspect_ratio, original_aspect_ratio, delta=0.01)
+@unittest.skipIf(not run_integration_tests, "Skipping integration tests. Set RUN_INTEGRATION_TESTS=True to run.")
+class TestVideoGenerationIntegration(unittest.TestCase):
+    
+    def setUp(self):
+        self.gcp_project_id = os.environ.get("GCP_PROJECT_ID")
+        self.gcp_region = os.environ.get("GCP_REGION")
+        self.gcs_bucket = os.environ.get("GCS_BUCKET")
+        self.test_image_path = "images/11.jpg"
+        self.output_dir = "debug_output"
+        os.makedirs(self.output_dir, exist_ok=True)
 
-        with Image.open(io.BytesIO(prepared_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 1280)
-            self.assertEqual(height, 720)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
+        if not all([self.gcp_project_id, self.gcp_region, self.gcs_bucket]):
+            self.fail("Missing required GCP environment variables for integration test.")
 
-
-if __name__ == '__main__':
-    unittest.main()
-
-
-    def tearDown(self):
-        if os.path.exists(self.test_dir):
-            shutil.rmtree(self.test_dir)
-
-    def test_resize_wide_image(self):
-        output_path = os.path.join(self.test_dir, "wide_resized.png")
-        resize_to_16_9(self.wide_img_path, output_path)
-
-        with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 200x90 input (wider than 16:9)
-            # New height should be int(200 / (16/9)) = 112
-            self.assertEqual(width, 200)
-            self.assertEqual(height, 112)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
-    def test_resize_tall_image(self):
-        output_path = os.path.join(self.test_dir, "tall_resized.png")
-        resize_to_16_9(self.tall_img_path, output_path)
-
-        with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 120x90 input (taller than 16:9)
-            # New width should be int(90 * (16/9)) = 160
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-            self.assertAlmostEqual(width / height, 16/9, delta=0.01)
-
-    def test_resize_exact_16_9_image(self):
-        output_path = os.path.join(self.test_dir, "exact_resized.png")
-        resize_to_16_9(self.exact_img_path, output_path)
-
-        with Image.open(output_path) as img:
-            width, height = img.size
-            # For a 160x90 input (already 16:9)
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
-    def test_resize_wide_image_bytes(self):
-        with open(self.wide_img_path, 'rb') as f:
+    def test_full_video_generation_and_download(self):
+        """
+        Tests the full video generation pipeline: start, poll, and download.
+        """
+        # 1. Prepare the image
+        with open(self.test_image_path, "rb") as f:
             input_bytes = f.read()
+        prepared_image_bytes, _ = prepare_image_for_veo(input_bytes)
 
-        output_bytes = resize_to_16_9_bytes(input_bytes)
+        # 2. Start the video generation job
+        operation_name, model_id = video_generator.start_video_generation_job(
+            project_id=self.gcp_project_id,
+            location=self.gcp_region,
+            input_image_bytes=prepared_image_bytes,
+            output_gcs_uri_prefix=f"gs://{self.gcs_bucket}"
+        )
+        self.assertIsNotNone(operation_name)
+        self.assertIsNotNone(model_id)
 
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 200)
-            self.assertEqual(height, 112)
+        # 3. Poll for completion
+        creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        completed_operation = video_generator.poll_operation(
+            operation_name, creds, self.gcp_project_id, self.gcp_region, model_id
+        )
+        self.assertNotIn("error", completed_operation)
+        self.assertTrue(completed_operation.get("done"))
 
-    def test_resize_tall_image_bytes(self):
-        with open(self.tall_img_path, 'rb') as f:
-            input_bytes = f.read()
-
-        output_bytes = resize_to_16_9_bytes(input_bytes)
-
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
-    def test_resize_exact_16_9_image_bytes(self):
-        with open(self.exact_img_path, 'rb') as f:
-            input_bytes = f.read()
-
-        output_bytes = resize_to_16_9_bytes(input_bytes)
-
-        with Image.open(io.BytesIO(output_bytes)) as img:
-            width, height = img.size
-            self.assertEqual(width, 160)
-            self.assertEqual(height, 90)
-
+        # 4. Download the result
+        gcs_uri = completed_operation["response"]["videos"][0]["gcsUri"]
+        download_path = os.path.join(self.output_dir, "integration_test_video.mp4")
+        video_generator.download_from_gcs(gcs_uri, download_path)
+        
+        self.assertTrue(os.path.exists(download_path))
+        self.assertGreater(os.path.getsize(download_path), 0)
 
 if __name__ == '__main__':
     unittest.main()

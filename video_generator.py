@@ -90,50 +90,35 @@ def start_video_generation_job(
         log.error("start_video_generation_job.request_error", error=str(e), exc_info=True)
         raise
 
-def crop_video_to_aspect_ratio(gcs_uri: str, original_aspect_ratio: float, original_filename: str = None, timestamp: str = None) -> str:
+def crop_video_to_aspect_ratio(local_video_path: str, original_aspect_ratio: float) -> str:
     """
-    Downloads a video from GCS, crops it, and returns the local path.
+    Crops a local video file to a target aspect ratio.
     """
-    log.info("crop_video.start", gcs_uri=gcs_uri, target_aspect_ratio=original_aspect_ratio)
-    storage_client = storage.Client()
-
-    if not gcs_uri.startswith("gs://"):
-        log.error("crop_video.invalid_uri", uri=gcs_uri)
-        raise ValueError("Invalid GCS URI. Must start with 'gs://'.")
-    bucket_name, blob_name = gcs_uri[5:].split("/", 1)
-
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_in:
-        log.info("crop_video.downloading", gcs_uri=gcs_uri, local_path=temp_in.name)
-        blob.download_to_filename(temp_in.name)
-
-        # Save the original 16:9 video locally if not in Cloud Run
-        if not os.environ.get("K_SERVICE") and original_filename and timestamp:
-            local_filename_16x9 = f"{original_filename}_16x9_{timestamp}.mp4"
-            local_filepath_16x9 = os.path.join("results", local_filename_16x9)
-            shutil.copy(temp_in.name, local_filepath_16x9)
-            log.info("crop_video.saved_16x9_locally", path=local_filepath_16x9)
-
-        clip = VideoFileClip(temp_in.name)
+    log.info("crop_video.start", local_path=local_video_path, target_aspect_ratio=original_aspect_ratio)
+    
+    with VideoFileClip(local_video_path) as clip:
         video_width, video_height = clip.size
         video_aspect_ratio = video_width / video_height
         log.info("crop_video.video_loaded", dimensions=f"{video_width}x{video_height}")
 
         if abs(original_aspect_ratio - video_aspect_ratio) < 1e-5:
             log.info("crop_video.no_crop_needed")
-            clip.close()
-            return temp_in.name
+            # Return a copy since the original will be cleaned up
+            output_temp_file = tempfile.NamedTemporaryFile(delete=False, suffix="_cropped.mp4")
+            shutil.copy(local_video_path, output_temp_file.name)
+            return output_temp_file.name
 
+        # Calculate the new dimensions to match the original aspect ratio, maximizing resolution.
         if original_aspect_ratio > video_aspect_ratio:
-            new_height = video_width / original_aspect_ratio
+            # The original image was wider than the 16:9 video. Crop the top and bottom.
             new_width = video_width
-            y1 = (video_height - new_height) / 2
+            new_height = int(video_width / original_aspect_ratio)
             x1 = 0
+            y1 = (video_height - new_height) / 2
         else:
-            new_width = video_height * original_aspect_ratio
+            # The original image was taller than the 16:9 video. Crop the sides.
             new_height = video_height
+            new_width = int(video_height * original_aspect_ratio)
             x1 = (video_width - new_width) / 2
             y1 = 0
 
@@ -141,13 +126,12 @@ def crop_video_to_aspect_ratio(gcs_uri: str, original_aspect_ratio: float, origi
         cropped_clip = crop(clip, x1=x1, y1=y1, width=new_width, height=new_height)
 
         output_temp_file = tempfile.NamedTemporaryFile(delete=False, suffix="_cropped.mp4")
-        log.info("crop_video.writing_output", output_path=output_temp_file.name)
-        cropped_clip.write_videofile(output_temp_file.name, codec="libx264", audio=False, logger=None)
-
-        clip.close()
-        cropped_clip.close()
-        os.remove(temp_in.name)
-        log.info("crop_video.cleanup", removed_file=temp_in.name)
+        try:
+            log.info("crop_video.writing_output", output_path=output_temp_file.name)
+            cropped_clip.write_videofile(output_temp_file.name, codec="libx264", audio=False, logger=None)
+        finally:
+            # Ensure the clip resources are released
+            cropped_clip.close()
 
         return output_temp_file.name
 
@@ -170,9 +154,31 @@ def download_from_gcs(gcs_uri: str, local_destination_path: str):
     log.info("download_from_gcs.success", local_path=local_destination_path)
 
 
-def upload_to_gcs_and_get_url(local_file_path: str, gcs_bucket_name: str, destination_blob_name: str) -> str:
+import datetime
+
+def generate_signed_url(gcs_bucket_name: str, destination_blob_name: str) -> str:
     """
-    Uploads a local file to GCS and returns its public URL.
+    Generates a signed URL to provide temporary access to a GCS object.
+    """
+    log.info("generate_signed_url.start", bucket=gcs_bucket_name, blob_name=destination_blob_name)
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(gcs_bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    # Set the expiration time for the URL
+    expiration_time = datetime.timedelta(minutes=15)
+
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=expiration_time,
+        method="GET",
+    )
+    log.info("generate_signed_url.success")
+    return signed_url
+
+def upload_to_gcs(local_file_path: str, gcs_bucket_name: str, destination_blob_name: str) -> str:
+    """
+    Uploads a local file to GCS and returns the blob name.
     """
     log.info("upload_to_gcs.start", local_path=local_file_path, bucket=gcs_bucket_name, blob_name=destination_blob_name)
     storage_client = storage.Client()
@@ -182,10 +188,7 @@ def upload_to_gcs_and_get_url(local_file_path: str, gcs_bucket_name: str, destin
     blob.upload_from_filename(local_file_path)
     log.info("upload_to_gcs.file_uploaded")
 
-    # The blob is made public based on the bucket's IAM settings (Uniform Bucket-Level Access)
-    # The make_public() call is not needed and will cause an error.
-
     os.remove(local_file_path)
     log.info("upload_to_gcs.cleanup", removed_file=local_file_path)
 
-    return blob.public_url
+    return destination_blob_name

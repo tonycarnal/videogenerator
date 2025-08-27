@@ -221,3 +221,102 @@
 {'new_size': 107925, 'event': 'resize_image_endpoint.resize_complete', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:20:24.462276Z'}
 {'path': 'results/11_16x9_20250827_102024.jpg', 'event': 'resize_image_endpoint.saved_locally', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:20:24.465634Z'}
 127.0.0.1 - - [27/Aug/2025 10:20:24] "POST /resize HTTP/1.1" 200 -
+{'host': '0.0.0.0', 'port': 8080, 'event': 'application.startup', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:37.173740Z'}
+ * Debugger is active!
+ * Debugger PIN: 485-094-488
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:37.197938Z'}
+127.0.0.1 - - [27/Aug/2025 10:38:37] "GET / HTTP/1.1" 200 -
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:37.280974Z'}
+127.0.0.1 - - [27/Aug/2025 10:38:37] "GET / HTTP/1.1" 200 -
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:45.659918Z'}
+127.0.0.1 - - [27/Aug/2025 10:38:45] "GET / HTTP/1.1" 200 -
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:45.842964Z'}
+127.0.0.1 - - [27/Aug/2025 10:38:45] "GET / HTTP/1.1" 200 -
+{'event': 'resize_image_endpoint.start', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:54.432138Z'}
+{'filename': '11.jpg', 'size': 338337, 'event': 'resize_image_endpoint.file_read', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:54.434884Z'}
+{'new_size': 107925, 'event': 'resize_image_endpoint.resize_complete', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:54.465542Z'}
+{'path': 'results/11_16x9_20250827_103854.jpg', 'event': 'resize_image_endpoint.saved_locally', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:38:54.466462Z'}
+127.0.0.1 - - [27/Aug/2025 10:38:54] "POST /resize HTTP/1.1" 200 -
+{'event': 'generate_video.start', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:04.187195Z'}
+{'filename': '11', 'size': 338337, 'event': 'generate_video.file_read', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:04.190183Z'}
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'event': 'generate_video.task_created', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:04.190521Z'}
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'event': 'generate_video.image_prepared', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:04.501027Z'}
+{'project_id': 'veo-testing', 'location': 'us-central1', 'event': 'start_video_generation_job.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:04.501401Z'}
+{'model_id': 'veo-3.0-fast-generate-001', 'job_id': 'a54dac7c-eebd-45d7-a224-0fba360d7c09', 'output_uri': 'gs://tonytestveo/a54dac7c-eebd-45d7-a224-0fba360d7c09/', 'event': 'start_video_generation_job.details', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:05.545436Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'event': 'start_video_generation_job.success', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:06.934372Z'}
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'event': 'generate_video.job_started', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:06.938075Z'}
+127.0.0.1 - - [27/Aug/2025 10:39:06] "[32mPOST /generate-video HTTP/1.1[0m" 302 -
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'event': 'video_result.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:06.944756Z'}
+127.0.0.1 - - [27/Aug/2025 10:39:06] "GET /video-result/9f1a5d92-2442-4dcf-b762-35e9085015cb HTTP/1.1" 200 -
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'event': 'poll_operation.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:08.140897Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:09.003837Z'}
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:17.734786Z'}
+127.0.0.1 - - [27/Aug/2025 10:39:17] "GET / HTTP/1.1" 200 -
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:39:17.785492Z'}
+127.0.0.1 - - [27/Aug/2025 10:39:17] "GET / HTTP/1.1" 200 -
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:29.921940Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:39:50.795302Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/c3dd01a0-93b6-4ce9-bb84-1da331f49f0a', 'event': 'poll_operation.finished', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:11.661142Z'}
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'gcs_uri': 'gs://tonytestveo/a54dac7c-eebd-45d7-a224-0fba360d7c09/5271394953503951594/sample_0.mp4', 'event': 'status_endpoint.veo_complete', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:40:11.663761Z'}
+{'gcs_uri': 'gs://tonytestveo/a54dac7c-eebd-45d7-a224-0fba360d7c09/5271394953503951594/sample_0.mp4', 'destination': 'results/11_16x9_20250827_104011.mp4', 'event': 'download_from_gcs.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:11.665346Z'}
+{'local_path': 'results/11_16x9_20250827_104011.mp4', 'event': 'download_from_gcs.success', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:14.450597Z'}
+{'local_path': 'results/11_16x9_20250827_104011.mp4', 'target_aspect_ratio': 1.0, 'event': 'crop_video.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:14.451151Z'}
+{'dimensions': '1280x720', 'event': 'crop_video.video_loaded', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:14.538532Z'}
+{'new_dimensions': '720x720', 'event': 'crop_video.cropping', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:14.538916Z'}
+{'output_path': '/tmp/tmpcmjjsc7s_cropped.mp4', 'event': 'crop_video.writing_output', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:40:14.544351Z'}
+{'task_id': '9f1a5d92-2442-4dcf-b762-35e9085015cb', 'error': "name 'temp_in' is not defined", 'event': 'status_endpoint.processing_error', 'logger': '__main__', 'level': 'error', 'timestamp': '2025-08-27T10:40:17.686667Z', 'exception': 'Traceback (most recent call last):\n  File "/usr/local/google/home/tonycarnal/git/videogenerator/main.py", line 192, in status_endpoint\n    cropped_video_path = crop_video_to_aspect_ratio(local_filepath_16x9, task["original_aspect_ratio"])\n  File "/usr/local/google/home/tonycarnal/git/videogenerator/video_generator.py", line 134, in crop_video_to_aspect_ratio\n    os.remove(temp_in.name)\n              ^^^^^^^\nNameError: name \'temp_in\' is not defined. Did you mean: \'tempfile\'?'}
+127.0.0.1 - - [27/Aug/2025 10:40:17] "GET /status/9f1a5d92-2442-4dcf-b762-35e9085015cb HTTP/1.1" 200 -
+{'host': '0.0.0.0', 'port': 8080, 'event': 'application.startup', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:20.453681Z'}
+ * Debugger is active!
+ * Debugger PIN: 485-094-488
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:31.542751Z'}
+127.0.0.1 - - [27/Aug/2025 10:42:31] "GET / HTTP/1.1" 200 -
+{'event': 'index.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:31.932463Z'}
+127.0.0.1 - - [27/Aug/2025 10:42:31] "GET / HTTP/1.1" 200 -
+{'event': 'generate_video.start', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:36.486079Z'}
+{'filename': '916', 'size': 359416, 'event': 'generate_video.file_read', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:36.493038Z'}
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'event': 'generate_video.task_created', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:36.493426Z'}
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'event': 'generate_video.image_prepared', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:36.804802Z'}
+{'project_id': 'veo-testing', 'location': 'us-central1', 'event': 'start_video_generation_job.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:42:36.805411Z'}
+{'model_id': 'veo-3.0-fast-generate-001', 'job_id': '55ab0f40-ca03-41fd-90ab-7481dbe0f7ef', 'output_uri': 'gs://tonytestveo/55ab0f40-ca03-41fd-90ab-7481dbe0f7ef/', 'event': 'start_video_generation_job.details', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:42:38.336768Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'event': 'start_video_generation_job.success', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:42:39.685051Z'}
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'event': 'generate_video.job_started', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:39.688746Z'}
+127.0.0.1 - - [27/Aug/2025 10:42:39] "[32mPOST /generate-video HTTP/1.1[0m" 302 -
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'event': 'video_result.accessed', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:42:39.707068Z'}
+127.0.0.1 - - [27/Aug/2025 10:42:39] "GET /video-result/b9656826-495b-44de-8226-85e79217dd72 HTTP/1.1" 200 -
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'event': 'poll_operation.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:42:41.330558Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:42:42.232078Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:43:03.076771Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:43:23.890610Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'wait_seconds': 20, 'event': 'poll_operation.in_progress', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:43:44.752837Z'}
+{'operation_name': 'projects/veo-testing/locations/us-central1/publishers/google/models/veo-3.0-fast-generate-001/operations/dea9e125-b1b5-49b3-ab32-63b3c56a0a4f', 'event': 'poll_operation.finished', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:05.592090Z'}
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'gcs_uri': 'gs://tonytestveo/55ab0f40-ca03-41fd-90ab-7481dbe0f7ef/7111417200723849959/sample_0.mp4', 'event': 'status_endpoint.veo_complete', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:05.594823Z'}
+{'gcs_uri': 'gs://tonytestveo/55ab0f40-ca03-41fd-90ab-7481dbe0f7ef/7111417200723849959/sample_0.mp4', 'destination': 'results/916_16x9_20250827_104405.mp4', 'event': 'download_from_gcs.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:05.595742Z'}
+{'local_path': 'results/916_16x9_20250827_104405.mp4', 'event': 'download_from_gcs.success', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:08.389586Z'}
+{'local_path': 'results/916_16x9_20250827_104405.mp4', 'target_aspect_ratio': 0.5454545454545454, 'event': 'crop_video.start', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:08.389932Z'}
+{'dimensions': '1280x720', 'event': 'crop_video.video_loaded', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:08.446811Z'}
+{'new_dimensions': '392x720', 'event': 'crop_video.cropping', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:08.447238Z'}
+{'output_path': '/tmp/tmpoa_xvqsn_cropped.mp4', 'event': 'crop_video.writing_output', 'logger': 'video_generator', 'level': 'info', 'timestamp': '2025-08-27T10:44:08.448649Z'}
+{'task_id': 'b9656826-495b-44de-8226-85e79217dd72', 'local_path': '/tmp/tmpoa_xvqsn_cropped.mp4', 'event': 'status_endpoint.crop_complete', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.403379Z'}
+{'path': 'results/916_cropped_20250827_104405.mp4', 'event': 'status_endpoint.saved_locally', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.405330Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "GET /status/b9656826-495b-44de-8226-85e79217dd72 HTTP/1.1" 200 -
+{'filename': '916_16x9_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.431418Z'}
+{'filename': '916_cropped_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.450333Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_16x9_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_cropped_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_cropped_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.479282Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_cropped_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_16x9_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.487645Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_16x9_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_cropped_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.499026Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_cropped_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_16x9_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.504731Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_16x9_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_cropped_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.560461Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_cropped_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_16x9_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:10.566419Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:10] "[35m[1mGET /videos/916_16x9_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_16x9_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:13.903606Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:13] "[35m[1mGET /videos/916_16x9_20250827_104405.mp4 HTTP/1.1[0m" 206 -
+{'filename': '916_cropped_20250827_104405.mp4', 'event': 'serve_video.requested', 'logger': '__main__', 'level': 'info', 'timestamp': '2025-08-27T10:44:22.889157Z'}
+127.0.0.1 - - [27/Aug/2025 10:44:22] "[35m[1mGET /videos/916_cropped_20250827_104405.mp4 HTTP/1.1[0m" 206 -
